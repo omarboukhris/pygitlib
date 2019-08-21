@@ -5,6 +5,7 @@ def printlist (label, l) :
 	print (label)
 	for i in l :
 		print("\t" + i)
+	print()
 
 def cut_branches (tree_a, tree_b) :
 	out_tree = []
@@ -15,53 +16,44 @@ def cut_branches (tree_a, tree_b) :
 
 class MimesisMerger :
 	def __init__ (self, repo_dir=".") :
-	self.gitrepo = GitCmd (repo_dir)
-	origin = self.gitrepo.checkrepo ("origin", "https://github.com/mimesis-inria/sofa.git") 
-	sofaframework = self.gitrepo.checkrepo("sofa-framework", "https://github.com/sofa-framework/sofa.git")
-	if not origin and not sofaframework:
-		print (">>> check remotes, might be missing")
-		exit()
-	self.gitrepo.fetch()
-	self.gitrepo.fetch("--prune")
+		self.gitrepo = GitCmd (repo_dir)
+		origin = self.gitrepo.checkrepo ("origin", "https://github.com/mimesis-inria/sofa.git") 
+		sofaframework = self.gitrepo.checkrepo("sofa-framework", "https://github.com/sofa-framework/sofa.git")
+		if not origin or not sofaframework:
+			print (">>> check remotes, might be missing")
+			exit()
+		self.gitrepo.fetch()
+		self.gitrepo.fetch("--prune")
 
-	self.blacklist = [
-		"origin/HEAD",
-		"origin/cmtopology",
-		"origin/cmtopology_draft",
-		"origin/cmtopology_module",
-		"origin/cmtopology_pr_backup",
-		"origin/cmtopology_rebased_cleaned_squashed",
-		"origin/issofa_beamfemff",
-		"origin/issofa_debug",
-		"rigin/issofa_deprecatedapi",
-		"origin/issofa_gui",
-		"origin/issofa_planeff",
-		"origin/issofa_sofaphysicsapi",
-		"rigin/issofa_solvers",
-		"origin/issofa_sph",
-		"origin/issofa_subsetmultimapping",
-		"origin/issofa_tests",
-		"origin/master",
-		"origin/mimesis",
-		"origin/multithreading_mmoge_wip",
-		"origin/v16.08",
-		"origin/add_rotatableboxroi",
-		"origin/beam_mapping",
-		"origin/parallelVectorsPlugin",
-		"origin/pluginizing_beamFF",
-		"origin/scn2python_timerJSONOutput",
-		"origin/wip_stateFilter",
-		"origin/v18.12.everest",
-		"origin/sofabending",
-	]
-	#return gitrepo
+		self.blacklist = []
+		self.mergedbranches = []
+
+	def load_blacklist (self, filename="/home/omar/projects/pygitlib/blacklistbranches.name") :
+		fstream = open (filename, "r")
+		self.blacklist = [line.split("\n")[0] for line in fstream.readlines()]
+		fstream.close()
+
+	def load_mergedbranches (self, filename="/home/omar/projects/pygitlib/mergedbranches.hash") :
+		fstream = open (filename, "r")
+		self.mergedbranches = fstream.readlines()
+		fstream.close()
 
 	# selects branches to merge
 	def compute_whitelist(self) :
 		branches_to_cut = self.gitrepo.getBranches ("-r | grep sofa-framework | sed  's/sofa-framework/origin/'")
 		branches = self.gitrepo.getBranches ("-r | grep origin")
-		self.whitelist_branches = cut_branches(cut_branches(branches, branches_to_cut), self.blacklist)
-		printlist("whitelist branches :", self.whitelist_branches)
+		self.load_blacklist()
+		whitelist_branches = cut_branches(cut_branches(branches, branches_to_cut), self.blacklist)
+		printlist("whitelist branches :", whitelist_branches)
+		
+		self.whitelist_branches = []
+		self.load_mergedbranches()
+		for branch in whitelist_branches:
+			if not self.gitrepo.get_hash(branch) in self.mergedbranches :
+				self.whitelist_branches.append (branch)
+			else :
+				print ("branch {} has already been merged".format(branch))
+		printlist("whitelist branches to merge :", self.whitelist_branches)
 
 	def merge_all (self) :
 		self.gitrepo.checkout("mimesis")
@@ -76,15 +68,15 @@ class MimesisMerger :
 				faulty_branches.append(branch)
 			else :
 				successful_br.append(branch)
-		gitrepo.checkout("master")
-		gitrepo.dump_log()
+		self.gitrepo.checkout("master")
+		self.gitrepo.dump_log()
 		return faulty_branches, successful_br
 
 if len(sys.argv) == 2 :
 
 	mimesis_merge = MimesisMerger(sys.argv[1])
 	mimesis_merge.compute_whitelist()
-	faulty_branches, successful_br = mimesis_merge.merge_all (gitrepo, whitelist_branches)
+	faulty_branches, successful_br = mimesis_merge.merge_all ()
 	printlist("faulty branches :", faulty_branches)
 	printlist("successful merges :", successful_br)
 	

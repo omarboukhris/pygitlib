@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, datetime
 
 class GitCmd :
 	
@@ -118,12 +118,14 @@ class GitCmd :
 	def dump_log (self, err_file="err_log.txt", succ_file="succ_log.txt") :
 		if self.log_err != [] :
 			err_stream = open (err_file, "w")
+			err_stream.write ("{}\n".format(datetime.datetime.now()))
 			for (status, err_msg) in self.log_err :
 				line = status + "\n" + err_msg + "\n\n"
 				err_stream.write(line)
 			err_stream.close()
 		if self.log_succ != [] :
 			succ_stream = open (succ_file, "w")
+			succ_stream.write ("{}\n".format(datetime.datetime.now()))
 			for status in self.log_succ :
 				line = status + "\n"
 				succ_stream.write(line)
