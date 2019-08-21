@@ -12,6 +12,7 @@ class GitCmd :
 			print ("(fatal) repo {} does not seem to exist. Check path".format(repo))
 			exit()
 
+	# clone a repo
 	def clone (self, url) :
 		if os.path.exists (".git/") :
 			print ("(fatal) This is already a git repo")
@@ -21,6 +22,7 @@ class GitCmd :
 		pipe.close()
 		return out
 	
+	# add a remote by name
 	def addRemote (self, name, remote) :
 		pipe = os.popen ("git remote add " + name + " " + remote , "r")
 		out = "".join(pipe.readlines())
@@ -31,23 +33,31 @@ class GitCmd :
 		pipe.close()
 		return out
 	
+	# runs any command in popen
 	def command (self, cmd) :
 		pipe = os.popen (cmd, "r")
 		out = "".join(pipe.readlines())
 		pipe.close()
 		return out
-	
+
+	# git fetch
+	def fetch (self, param="") :
+		return self.command("git fetch {}".format(param))
+	# for hard reseting branches
 	def reset_hard_to_commit (self, commit_hash) :
 		return self.command("git reset --hard {}".format(commit_hash))
-	def get_HEAD_hash (self) :
-		return self.command("git rev-parse HEAD")
+	# for getting a branche's hash
+	def get_hash (self, branch) :
+		return self.command("git rev-parse {}".format(branch))
 
+	# git branch
 	def getBranches (self, param) :
 		pipe = os.popen ("git branch " + param, "r")
 		out = [line.strip().split()[0] for line in pipe.readlines()] #"".join(pipe.readlines())
 		pipe.close()
 		return out
 	
+	#check if remote is present
 	def checkrepo (self, remotename, url) :
 		pipe = os.popen ("git config --get remote.{}.url".format(remotename), "r")
 		out = "".join(pipe.readlines()).strip()
@@ -60,24 +70,28 @@ class GitCmd :
 			print ("(fatal) remote {} is not @ {}".format(remotename, url))
 			return False 
 
+	# git checkout
 	def checkout (self, branch) :
 		pipe = os.popen ("git checkout " + branch, "r")
 		out = "".join(pipe.readlines()).strip()
 		pipe.close()
 		return
 	
+	# git commit -am
 	def commitall (self, message) :
 		pipe = os.popen ("git commit -am \'{}\'".format(message), "r")
 		out = "".join(pipe.readlines()).strip()
 		pipe.close()
 		return out
 
+	# git push
 	def push (self, param) :
 		pipe = os.popen ("git push " + param, 'r')
 		out = "".join(pipe.readlines())
 		pipe.close()
 		return out
 
+	# tries merging otherwise hard resets the branch
 	def merge (self, branch) :
 		pipe = os.popen ("git merge " + branch, "r")
 		out = [line.strip() for line in pipe.readlines()]
@@ -100,6 +114,7 @@ class GitCmd :
 				self.log_succ.append (status)
 		return True
 
+	# dumps logs in text files
 	def dump_log (self, err_file="err_log.txt", succ_file="succ_log.txt") :
 		if self.log_err != [] :
 			err_stream = open (err_file, "w")
@@ -114,6 +129,7 @@ class GitCmd :
 				succ_stream.write(line)
 			succ_stream.close()
 
+	# get branches by remote
 	@staticmethod 
 	def filterBranchesByRemote (branches, remote) :
 		out = []
@@ -122,79 +138,3 @@ class GitCmd :
 				out.append(branch)
 		print(out[1:])
 		return out[1:]
-
-def cut_branches (tree_a, tree_b) :
-	out_tree = []
-	for br in tree_a :
-		if not (br in tree_b) :
-			out_tree.append(br)
-	return out_tree
-
-def printlist (label, l) :
-	print (label)
-	for i in l :
-		print("\t" + i)
-
-blacklist = [
-	"origin/HEAD",
-	"origin/cmtopology",
-	"origin/cmtopology_draft",
-	"origin/cmtopology_module",
-	"origin/cmtopology_pr_backup",
-	"origin/cmtopology_rebased_cleaned_squashed",
-	"origin/issofa_beamfemff",
-	"origin/issofa_debug",
-	"rigin/issofa_deprecatedapi",
-	"origin/issofa_gui",
-	"origin/issofa_planeff",
-	"origin/issofa_sofaphysicsapi",
-	"rigin/issofa_solvers",
-	"origin/issofa_sph",
-	"origin/issofa_subsetmultimapping",
-	"origin/issofa_tests",
-	"origin/master",
-	"origin/mimesis",
-	"origin/multithreading_mmoge_wip",
-	"origin/v16.08",
-	"origin/add_rotatableboxroi",
-	"origin/beam_mapping",
-	"origin/parallelVectorsPlugin",
-	"origin/pluginizing_beamFF",
-	"origin/scn2python_timerJSONOutput",
-	"origin/wip_stateFilter",
-	"origin/v18.12.everest",
-	"origin/sofabending",
-]
-if len(sys.argv) == 2 :
-	gitrepo = GitCmd (sys.argv[1])
-	origin = gitrepo.checkrepo ("origin", "https://github.com/mimesis-inria/sofa.git") 
-	sofaframework = gitrepo.checkrepo("sofa-framework", "https://github.com/sofa-framework/sofa.git")
-	if not origin and not sofaframework:
-		print (">>> check remotes, might be missing")
-		exit ()
-
-	branches_to_cut = gitrepo.getBranches ("-r | grep sofa-framework | sed  's/sofa-framework/origin/'")
-	branches = gitrepo.getBranches ("-r | grep origin")
-	whitelist_branches = cut_branches(cut_branches(branches, branches_to_cut), blacklist)
-	gitrepo.checkout("mimesis")
-	
-	printlist("whitelist branches :", whitelist_branches)
-	print()
-
-	faulty_branches, successful_br = [], []
-	for branch in whitelist_branches :
-		headhash = gitrepo.get_HEAD_hash ()
-		print ("merging " + branch)
-		if not gitrepo.merge (branch) :
-			print ("\t(fatal) fix merge conflict before resuming")
-			gitrepo.reset_hard_to_commit(headhash)
-			faulty_branches.append(branch)
-		else :
-			successful_br.append(branch)
-	gitrepo.checkout("master")
-	gitrepo.dump_log()
-
-	print ()
-	printlist("faulty branches :", faulty_branches)
-	printlist("successful merges :", successful_br)
-	
