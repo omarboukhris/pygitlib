@@ -1,18 +1,6 @@
 import os, sys
 from pygitlib import *
 
-def printlist (label, l) :
-	print (label)
-	for i in l :
-		print("\t" + i)
-	print()
-
-def cut_branches (tree_a, tree_b) :
-	out_tree = []
-	for br in tree_a :
-		if not (br in tree_b) :
-			out_tree.append(br)
-	return out_tree
 
 class MimesisMerger :
 	def __init__ (self, repo_dir=".") :
@@ -28,15 +16,23 @@ class MimesisMerger :
 		self.blacklist = []
 		self.mergedbranches = []
 
-	def load_blacklist (self, filename="/home/omar/projects/pygitlib/blacklistbranches.name") :
-		fstream = open (filename, "r")
-		self.blacklist = [line.split("\n")[0] for line in fstream.readlines()]
-		fstream.close()
+	def load_blacklist (self, filename="/home/omar/projects/tools/pygitlib/blacklistbranches.name") :
+		try :
+			fstream = open (filename, "r")
+			self.blacklist = [line.split("\n")[0] for line in fstream.readlines()]
+			fstream.close()
+			print ("[+] blacklist read")
+		except :
+			print ("[-] blacklist can't be read")
 
-	def load_mergedbranches (self, filename="/home/omar/projects/pygitlib/mergedbranches.hash") :
-		fstream = open (filename, "r")
-		self.mergedbranches = fstream.readlines()
-		fstream.close()
+	def load_mergedbranches (self, filename="/home/omar/projects/tools/pygitlib/mergedbranches.hash") :
+		try :
+			fstream = open (filename, "r")
+			self.mergedbranches = fstream.readlines()
+			fstream.close()
+			print ("[+] whitelist read")
+		except :
+			print ("[-] whitelist can't be read")
 
 	# selects branches to merge
 	def compute_whitelist(self) :
@@ -55,10 +51,11 @@ class MimesisMerger :
 				print ("branch {} has already been merged".format(branch))
 		printlist("whitelist branches to merge :", self.whitelist_branches)
 
-	def merge_all (self) :
+	def merge_all (self, commitkw="master") :
 		self.gitrepo.checkout("mimesis")
-		self.gitrepo.reset_hard_to_commit("master")
+		self.gitrepo.reset_hard_to_commit(commitkw)
 		faulty_branches, successful_br = [], []
+		print ("=========================")
 		for branch in self.whitelist_branches :
 			headhash = self.gitrepo.get_hash ("HEAD")
 			print ("merging " + branch)
@@ -68,15 +65,19 @@ class MimesisMerger :
 				faulty_branches.append(branch)
 			else :
 				successful_br.append(branch)
+			print ("=========================")
 		self.gitrepo.checkout("master")
 		self.gitrepo.dump_log()
 		return faulty_branches, successful_br
 
-if len(sys.argv) == 2 :
-
+if len(sys.argv) >= 2 :
 	mimesis_merge = MimesisMerger(sys.argv[1])
 	mimesis_merge.compute_whitelist()
-	faulty_branches, successful_br = mimesis_merge.merge_all ()
+	faulty_branches, successful_br = [], []
+	if len(sys.argv) == 3 :
+		faulty_branches, successful_br = mimesis_merge.merge_all (readhash(sys.argv[2]))
+	else :
+		faulty_branches, successful_br = mimesis_merge.merge_all ()
 	printlist("faulty branches :", faulty_branches)
 	printlist("successful merges :", successful_br)
-	
+

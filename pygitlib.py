@@ -1,5 +1,30 @@
 import os, sys, datetime
 
+
+def printlist (label, l) :
+	print (label)
+	for i in l :
+		print("\t" + i)
+	print()
+
+def cut_branches (tree_a, tree_b) :
+	out_tree = []
+	for br in tree_a :
+		if not (br in tree_b) :
+			out_tree.append(br)
+	return out_tree
+
+def readhash (filename) :
+	try :
+		fstream = open(filename, "r")
+		ss = fstream.readlines()[0]
+		fstream.close() 
+		print ("[+] Hash found @ {}, using {}".format(filename, ss))
+		return ss 
+	except :
+		print ("[-] Hash not found @ {}, using master".format(filename))
+		return "master"
+
 class GitCmd :
 	
 	def __init__ (self, repo) :
