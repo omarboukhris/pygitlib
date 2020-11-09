@@ -5,7 +5,7 @@ from pygitlib import *
 class MimesisMerger :
 	def __init__ (self, repo_dir=".") :
 		self.gitrepo = GitCmd (repo_dir)
-		origin = self.gitrepo.checkrepo ("origin", "https://github.com/mimesis-inria/sofa.git") 
+		origin = self.gitrepo.checkrepo ("origin", "git@github.com:mimesis-inria/sofa.git") 
 		sofaframework = self.gitrepo.checkrepo("sofa-framework", "https://github.com/sofa-framework/sofa.git")
 		if not origin or not sofaframework:
 			print (">>> check remotes, might be missing")
@@ -66,9 +66,12 @@ class MimesisMerger :
 			else :
 				successful_br.append(branch)
 			print ("=========================")
-		self.gitrepo.checkout("master")
+		#self.gitrepo.checkout("master")
 		self.gitrepo.dump_log()
 		return faulty_branches, successful_br
+	
+	def push(self) :
+		self.gitrepo.push("--force origin mimesis") 
 
 if len(sys.argv) >= 2 :
 	mimesis_merge = MimesisMerger(sys.argv[1])
@@ -78,6 +81,7 @@ if len(sys.argv) >= 2 :
 		faulty_branches, successful_br = mimesis_merge.merge_all (readhash(sys.argv[2]))
 	else :
 		faulty_branches, successful_br = mimesis_merge.merge_all ()
+	mimesis_merge.push()
 	printlist("faulty branches :", faulty_branches)
 	printlist("successful merges :", successful_br)
 
