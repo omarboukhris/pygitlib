@@ -127,7 +127,7 @@ class GitCmd :
 			return False
 		for o in out :
 			# handle conflict
-			isconflict = o.find ("CONFLICT") != -1 or o.find("conflict") != -1 or o.find('conflit') != -1 or o.find('CONFLIT') != -1
+			isconflict = o.upper().find ("CONFLICT") != -1
 			if isconflict :
 				status, err_msg = "(error) @{}.merge : {}".format(branch, o), "full error message : <<< {} >>>".format("\n".join(out))
 				self.log_err.append ((status, err_msg))

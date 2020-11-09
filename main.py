@@ -16,34 +16,34 @@ class MimesisMerger :
 		self.blacklist = []
 		self.mergedbranches = []
 
-	def load_blacklist (self, filename="/home/omar/projects/tools/pygitlib/blacklistbranches.name") :
+	def load_blacklist (self, filepath) :
 		try :
-			fstream = open (filename, "r")
+			fstream = open (filepath+"blacklistbranches.name", "r")
 			self.blacklist = [line.split("\n")[0] for line in fstream.readlines()]
 			fstream.close()
 			print ("[+] blacklist read")
 		except :
 			print ("[-] blacklist can't be read")
 
-	def load_mergedbranches (self, filename="/home/omar/projects/tools/pygitlib/mergedbranches.hash") :
+	def load_mergedbranches (self, filepath) :
 		try :
-			fstream = open (filename, "r")
+			fstream = open (filepath+"mergedbranches.hash", "r")
 			self.mergedbranches = fstream.readlines()
 			fstream.close()
-			print ("[+] whitelist read")
+			print ("[+] merged branches read")
 		except :
-			print ("[-] whitelist can't be read")
+			print ("[-] merged branches can't be read")
 
 	# selects branches to merge
-	def compute_whitelist(self) :
+	def compute_whitelist(self, path="") :
 		branches_to_cut = self.gitrepo.getBranches ("-r | grep sofa-framework | sed  's/sofa-framework/origin/'")
 		branches = self.gitrepo.getBranches ("-r | grep origin")
-		self.load_blacklist()
+		self.load_blacklist(path)
+		self.load_mergedbranches(path)
 		whitelist_branches = cut_branches(cut_branches(branches, branches_to_cut), self.blacklist)
 		printlist("whitelist branches :", whitelist_branches)
 		
 		self.whitelist_branches = []
-		self.load_mergedbranches()
 		for branch in whitelist_branches:
 			if not self.gitrepo.get_hash(branch) in self.mergedbranches :
 				self.whitelist_branches.append (branch)
@@ -72,7 +72,7 @@ class MimesisMerger :
 
 if len(sys.argv) >= 2 :
 	mimesis_merge = MimesisMerger(sys.argv[1])
-	mimesis_merge.compute_whitelist()
+	mimesis_merge.compute_whitelist(path="/home/omar/projects/tools/pygitlib/")
 	faulty_branches, successful_br = [], []
 	if len(sys.argv) == 3 :
 		faulty_branches, successful_br = mimesis_merge.merge_all (readhash(sys.argv[2]))
