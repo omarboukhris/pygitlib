@@ -1,6 +1,24 @@
+#!/usr/bin/env python3
 import os, sys
 from pygitlib import *
 
+def help():
+	print(
+	'''
+		pygitlib/main.py is a script to keep the MIMESIS's team SOFA repository up to date.
+		It is supposed to merge all compatible branches of the remote into our mimesis branch.
+		
+		Usage:
+			>> mimesis_merger.py [optinonal-sofa-commit-hash]
+
+		By default, every branch is merged into sofa-framework latest commit.
+		If an optionnal sofa commit hash is given, the merge will be performed into this specific commit.
+		For any questions, be sure to ask:
+			- Omar Boukhris (@omarboukhris)
+			- Pedro Perrusi (@pedroperrusi)
+
+	'''
+	)
 
 class MimesisMerger :
 	def __init__ (self, repo_dir=os.environ.get("SOFA_WORK_DIRECTORY") + "/sofa/") :
@@ -83,7 +101,7 @@ class MimesisMerger :
 
 if __name__ == "__main__":
 	if len(sys.argv) > 1 and sys.argv[1] == '-h':
-	mimesis_merge.compute_whitelist(path="/home/omar/projects/tools/pygitlib/")
+		help()
 		exit()	
 	mimesis_merge = MimesisMerger()
 	mimesis_merge.compute_whitelist(path=os.environ.get("SOFA_WORK_DIRECTORY") + "/mimesiscript/pygitlib/")
