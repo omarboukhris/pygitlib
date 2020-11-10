@@ -8,6 +8,9 @@ def help():
 		pygitlib/main.py is a script to keep the MIMESIS's team SOFA repository up to date.
 		It is supposed to merge all compatible branches of the remote into our mimesis branch.
 		
+		Important: be sure to allow the script to run with bash
+			>> chmod +x main.py
+		
 		Usage:
 			>> mimesis_merger.py [optinonal-sofa-commit-hash]
 
